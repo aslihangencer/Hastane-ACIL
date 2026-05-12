@@ -31,12 +31,12 @@ def get_hasta_id_by_tc(tc_no):
     return db.fetch_scalar("SELECT HastaID FROM dbo.HASTA WHERE TCKimlikNo = ?", (tc_no,))
 
 def create_patient_admission(hasta_id, sikayet, gelis_sekli, oncelik_id, user_id=None):
-    """Creates a new admission without redundant status and ID columns."""
+    """Creates a new admission with 'Bekliyor' status."""
     oncelik_adi = db.fetch_scalar("SELECT SeviyeAdi FROM dbo.ONCELIK_SEVIYESI WHERE SeviyeID = ?", (oncelik_id,))
     
     query = """
-    INSERT INTO dbo.BASVURU (HastaID, Sikayet, GelisSekli, OncelikDurumu, BasvuruTarihi, GelisZamani)
-    VALUES (?, ?, ?, ?, GETDATE(), GETDATE())
+    INSERT INTO dbo.BASVURU (HastaID, Sikayet, GelisSekli, OncelikDurumu, Durum, BasvuruTarihi, GelisZamani)
+    VALUES (?, ?, ?, ?, 'Bekliyor', GETDATE(), GETDATE())
     """
     db.execute(query, (hasta_id, sikayet, gelis_sekli, oncelik_adi))
     log_audit_event(user_id, "BASVURU", "INSERT", new_val={"hasta": hasta_id, "oncelik": oncelik_adi}, desc="Yeni acil başvuru kaydı.", hasta_id=hasta_id)
@@ -49,13 +49,14 @@ def update_patient_state(basvuru_id, yeni_durum, user_id=None):
     log_audit_event(user_id, "MUDAHALE", "UPDATE", new_val={"sonuc": yeni_durum}, desc=f"Müdahale sonucu güncellendi: {yeni_durum}")
 
 def assign_staff_to_patient(personel_id, basvuru_id, user_id=None):
-    """Assigns staff and moves patient to ACTIVE state."""
+    """Assigns staff and moves patient to 'Aktif Hasta' state."""
     hasta_id = db.fetch_scalar("SELECT HastaID FROM dbo.BASVURU WHERE BasvuruID = ?", (basvuru_id,))
     
     queries = [
         ("INSERT INTO dbo.PERSONEL_HASTA_ATAMA (PersonelID, BasvuruID, AtamaZamani, Durum) VALUES (?, ?, GETDATE(), 'Aktif')", 
          (personel_id, basvuru_id)),
-        ("UPDATE dbo.PERSONEL SET SonIslemZamani = GETDATE() WHERE PersonelID = ?", (personel_id,))
+        ("UPDATE dbo.PERSONEL SET SonIslemZamani = GETDATE() WHERE PersonelID = ?", (personel_id,)),
+        ("UPDATE dbo.BASVURU SET Durum = 'Aktif Hasta' WHERE BasvuruID = ?", (basvuru_id,))
     ]
     db.execute_transaction(queries)
     log_audit_event(user_id, "ATAMA", "INSERT", new_val={"personel": personel_id, "basvuru": basvuru_id}, desc="Hasta personele atandı.", hasta_id=hasta_id)

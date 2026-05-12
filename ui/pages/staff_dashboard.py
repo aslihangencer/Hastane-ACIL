@@ -208,30 +208,55 @@ def render_patient_registration():
 def render_operasyon_merkezi():
     st.markdown("<div style='font-size:1.1rem; font-weight:700; color:#1D2D50; margin-bottom:10px;'>🚑 ACİL SERVİS CANLI OPERASYON MERKEZİ</div>", unsafe_allow_html=True)
     
-    # --- BÖLÜM 1: PROFESYONEL CANLI HASTA KUYRUĞU ---
-    st.markdown("<div class='premium-card' style='padding:15px; border-top:3px solid #ef4444;'>", unsafe_allow_html=True)
-    st.markdown("<span style='font-size:0.8rem; font-weight:700; color:#475569;'>📋 CANLI HASTA TAKİP PANELİ (TRİYAJ ÖNCELİKLİ)</span>", unsafe_allow_html=True)
+    # --- BÖLÜM 1: PROFESYONEL FİLTRELEME VE DURUM AKIŞI ---
+    st.markdown("<div class='premium-card' style='padding:15px; border-top:3px solid #ef4444; margin-bottom:15px;'>", unsafe_allow_html=True)
     
     from data.read_repository import get_professional_queue
-    df = get_professional_queue()
+    patients_df = get_professional_queue()
     
-    if df.empty:
-        st.info("Kuyrukta bekleyen aktif hasta bulunmamaktadır.")
+    if patients_df.empty:
+        st.warning("Kuyrukta aktif hasta bulunmamaktadır.")
+        st.markdown("</div>", unsafe_allow_html=True)
     else:
-        # Renklendirme Fonksiyonu (Profesyonel Standart)
-        def apply_row_style(row):
-            color = ""
-            if row.AciliyetDerecesi == 'Kırmızı': color = 'background-color: #ffcccc; color: black; font-weight: bold;' # Çok Acil
-            elif row.AciliyetDerecesi == 'Sarı': color = 'background-color: #fff3cd; color: black;'  # Orta
-            elif row.AciliyetDerecesi == 'Yeşil': color = 'background-color: #d4edda; color: black;' # Stabil
-            return [color] * len(row)
-
-        # Tabloyu Göster
-        styled_df = df.style.apply(apply_row_style, axis=1)
-        st.dataframe(styled_df, use_container_width=True, hide_index=True)
-        st.caption(f"ℹ️ Şu an toplam {len(df)} hasta muayene bekliyor.")
+        # FİLTRELEME PANELİ
+        c_tri, c_gel, c_dur = st.columns(3)
         
-        if st.button("🔄 Kuyruğu Yenile", key="refresh_queue"):
+        with c_tri:
+            tri_f = st.selectbox("Triyaj Önceliği", ["Tümü", "Kırmızı", "Sarı", "Yeşil"], key="f_tri")
+        with c_gel:
+            gel_f = st.selectbox("Geliş Tipi", ["Tümü", "Ambulans", "Ayaktan"], key="f_gel")
+        with c_dur:
+            dur_f = st.selectbox("Hasta Durumu", ["Tümü", "Bekliyor", "Aktif Hasta"], key="f_dur")
+
+        # FİLTRELEME MANTIĞI
+        if tri_f != "Tümü": patients_df = patients_df[patients_df['AciliyetDerecesi'] == tri_f]
+        if gel_f != "Tümü": patients_df = patients_df[patients_df['DurumAdi'] == gel_f]
+        if dur_f != "Tümü": patients_df = patients_df[patients_df['Durum'] == dur_f]
+
+        # DURUM İKONLARI VE ROZETLER
+        def durum_icon(status):
+            if status == "Bekliyor": return "🟡 Bekliyor"
+            elif status == "Aktif Hasta": return "🟢 Aktif Hasta"
+            return status
+
+        if not patients_df.empty:
+            patients_df['DurumGoster'] = patients_df['Durum'].apply(durum_icon)
+            
+            # Renklendirme Fonksiyonu (Profesyonel Standart)
+            def apply_row_style(row):
+                color = ""
+                if row.AciliyetDerecesi == 'Kırmızı': color = 'background-color: #ffcccc; color: black; font-weight: bold;' # Çok Acil
+                elif row.AciliyetDerecesi == 'Sarı': color = 'background-color: #fff3cd; color: black;'  # Orta
+                elif row.AciliyetDerecesi == 'Yeşil': color = 'background-color: #d4edda; color: black;' # Stabil
+                return [color] * len(row)
+
+            st.markdown(f"**Toplam Bulunan Hasta:** {len(patients_df)}")
+            styled_df = patients_df[['KayitID', 'Hasta', 'AciliyetDerecesi', 'DurumAdi', 'DurumGoster', 'Saat']].style.apply(apply_row_style, axis=1)
+            st.dataframe(styled_df, use_container_width=True, hide_index=True)
+        else:
+            st.info("Seçilen filtrelere uygun hasta bulunamadı.")
+            
+        if st.button("🔄 Listeyi Yenile", key="refresh_queue"):
             UIStabilizer.safe_rerun()
     st.markdown("</div>", unsafe_allow_html=True)
     
@@ -450,40 +475,41 @@ def render_prof_beds():
 
 
 def render_prof_discharge():
-    st.markdown("<div style='font-size:1.1rem; font-weight:700; color:#1e3a5f; margin-bottom:10px;'>🚪 HASTA ÇIKIŞ VE TABURCU YÖNETİMİ</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size:1.1rem; font-weight:700; color:#1D2D50; margin-bottom:10px;'>🚪 HASTA TABURCU VE ÇIKIŞ İŞLEMLERİ</div>", unsafe_allow_html=True)
     
-    col_form, col_stats = st.columns([1.5, 1])
+    # 1. TOP SECTION: ACTIVE PATIENT SELECTION
+    st.markdown("<div class='premium-card' style='padding:20px; border-top:3px solid #6366f1;'>", unsafe_allow_html=True)
+    st.markdown("<span style='font-size:0.8rem; font-weight:700; color:#475569;'>📤 TABURCU EDİLECEK HASTA SEÇİMİ</span>", unsafe_allow_html=True)
     
-    with col_form:
-        st.markdown("<div class='premium-card' style='padding:15px;'>", unsafe_allow_html=True)
-        st.markdown("<span style='font-size:0.8rem; font-weight:700; color:#475569;'>📝 YENİ ÇIKIŞ KAYDI</span>", unsafe_allow_html=True)
+    from data.read_repository import get_professional_queue
+    all_q = get_professional_queue()
+    active_patients = all_q[all_q['Durum'] == 'Aktif Hasta'] if not all_q.empty else pd.DataFrame()
+    
+    if active_patients.empty:
+        st.info("Şu an sistemde taburcu edilecek 'Aktif Hasta' bulunmamaktadır.")
+    else:
+        active_patients['Display'] = active_patients['KayitID'].astype(str) + " - " + active_patients['Hasta']
+        selected_idx = st.selectbox("Tedavisi Tamamlanan Hastayı Seçin", active_patients.index, format_func=lambda x: active_patients.loc[x, 'Display'])
         
-        df_active = get_all_active_cases()
-        df_turu = get_discharge_types()
+        c1, c2 = st.columns(2)
+        discharge_type = c1.selectbox("Çıkış Türü", ["Taburcu", "Vefat", "Sevk", "Kendi İsteğiyle"])
+        note = c2.text_input("Çıkış Notu (Opsiyonel)")
         
-        if not df_active.empty:
-            with st.form("discharge_form_enterprise"):
-                y_idx = st.selectbox("Hasta Seç", df_active.index, format_func=lambda x: f"👤 {df_active.loc[x, 'Hasta']} (Oda: {df_active.loc[x, 'OdaNo'] or 'Yok'})")
-                c1, c2 = st.columns(2)
-                t_idx = c1.selectbox("Çıkış Türü", df_turu.index, format_func=lambda x: df_turu.loc[x, 'TuruAdi'])
-                c2.caption("💡 Çıkış sonrası yatak ve personel atamaları otomatik temizlenir.")
-                cikis_notu = st.text_area("Klinik Not", height=80, placeholder="Taburcu notları...")
-                
-                if st.form_submit_button("🚀 İŞLEMİ TAMAMLA", type="primary", use_container_width=True):
-                    selected = df_active.loc[y_idx]
-                    record_discharge(
-                        basvuru_id=selected['BasvuruID'], 
-                        cikis_turu_id=int(df_turu.loc[t_idx, 'TuruID']), 
-                        aciklama=cikis_notu, 
-                        yatis_id=selected['YatisID'] if pd.notnull(selected['YatisID']) else None, 
-                        yatak_id=selected['YatakID'] if pd.notnull(selected['YatakID']) else None, 
-                        user_id=st.session_state.user_id
-                    )
-                    UIStabilizer.notify_success(f"{selected['Hasta']} taburcu edildi.")
-                    UIStabilizer.safe_rerun()
-        else:
-            st.info("Sistemde aktif vaka bulunmuyor.")
-        st.markdown("</div>", unsafe_allow_html=True)
+        if st.button("🚪 ÇIKIŞI ONAYLA VE KAYDET", type="primary", use_container_width=True):
+            b_id = int(active_patients.loc[selected_idx, 'KayitID'])
+            
+            # Update BASVURU state
+            from core.stitch import db
+            db.execute("UPDATE dbo.BASVURU SET Durum = 'Taburcu', CikisTarihi = GETDATE() WHERE BasvuruID = ?", (b_id,))
+            
+            # Record in CIKIS table
+            from data.write_repository import create_patient_discharge
+            create_patient_discharge(b_id, discharge_type, note, user_id=st.session_state.user_id)
+            
+            st.balloons()
+            UIStabilizer.notify_success(f"Hasta {active_patients.loc[selected_idx, 'Hasta']} başarıyla taburcu edildi.")
+            UIStabilizer.safe_rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
 
     with col_stats:
         st.markdown("<div class='premium-card'>", unsafe_allow_html=True)

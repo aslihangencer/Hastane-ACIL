@@ -429,6 +429,7 @@ def get_professional_queue():
         H.Ad + ' ' + H.Soyad AS Hasta, 
         ISNULL(B.OncelikDurumu, 'Gri') AS AciliyetDerecesi, 
         ISNULL(B.GelisSekli, 'Ayaktan') AS DurumAdi,
+        ISNULL(B.Durum, 'Bekliyor') AS Durum,
         FORMAT(B.GelisZamani, 'HH:mm') AS Saat
     FROM dbo.BASVURU B
     JOIN dbo.HASTA H ON B.HastaID = H.HastaID
