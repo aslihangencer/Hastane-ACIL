@@ -477,9 +477,12 @@ def render_prof_beds():
 def render_prof_discharge():
     st.markdown("<div style='font-size:1.1rem; font-weight:700; color:#1D2D50; margin-bottom:10px;'>🚪 HASTA TABURCU VE ÇIKIŞ İŞLEMLERİ</div>", unsafe_allow_html=True)
     
-    # 1. TOP SECTION: ACTIVE PATIENT SELECTION
-    st.markdown("<div class='premium-card' style='padding:20px; border-top:3px solid #6366f1;'>", unsafe_allow_html=True)
-    st.markdown("<span style='font-size:0.8rem; font-weight:700; color:#475569;'>📤 TABURCU EDİLECEK HASTA SEÇİMİ</span>", unsafe_allow_html=True)
+    col_main, col_stats = st.columns([1.5, 1])
+    
+    with col_main:
+        # 1. TOP SECTION: ACTIVE PATIENT SELECTION
+        st.markdown("<div class='premium-card' style='padding:20px; border-top:3px solid #6366f1;'>", unsafe_allow_html=True)
+        st.markdown("<span style='font-size:0.8rem; font-weight:700; color:#475569;'>📤 TABURCU EDİLECEK HASTA SEÇİMİ</span>", unsafe_allow_html=True)
     
     from data.read_repository import get_professional_queue
     all_q = get_professional_queue()
