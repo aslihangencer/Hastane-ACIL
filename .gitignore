@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+build/
+dist/
+
+# IDEs
+.vscode/
+.idea/
+
+# App Specific
+.gemini/
+logs/
+*.log
+temp/
+scratch/
+artifacts/
+*.webp
+*.png
+*.jpg

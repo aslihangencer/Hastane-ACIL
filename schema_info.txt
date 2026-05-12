@@ -1,0 +1,6 @@
+HASTA: ['HastaID', 'Ad', 'Soyad', 'OncelikSeviyesi', 'Yas', 'Cinsiyet', 'TCKimlikNo']
+BASVURU: ['BasvuruID', 'HastaID', 'GelisSekliID', 'GelisZamani', 'BasvuruTarihi', 'Sikayet', 'OncelikDurumu', 'GelisSekli']
+PERSONEL: ['PersonelID', 'Ad', 'Soyad', 'Unvan', 'UzmanlikAlani', 'Vardiya', 'Durum']
+YATAKLAR: ['YatakID', 'OdaNo', 'YatakNo', 'Durum', 'OdaID']
+YATIS: ['YatisID', 'HastaID', 'YatakID', 'GirisZamani', 'CikisZamani', 'YatisTarihi']
+CIKIS: ['CikisID', 'YatisID', 'CikisZamani', 'CikisTuru', 'Aciklama']
