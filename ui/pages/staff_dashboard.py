@@ -14,7 +14,7 @@ from data.read_repository import (
     get_bed_status_detailed, get_live_patient_queue
 )
 from data.write_repository import (
-    update_bed_status_manual, create_staff, archive_staff, record_discharge, 
+    update_bed_status_manual, create_staff, archive_staff, 
     update_patient_state, create_patient_admission, create_patient
 )
 from services.auth_service import AuthService
@@ -28,7 +28,8 @@ from ui.components.bed_cards import render_compact_bed_grid
 from ui.components.analytics_panels import (
     render_wait_time_chart, render_triage_distribution_chart, 
     render_patient_flow_summary, render_system_log,
-    render_shift_intensity_heatmap, render_patient_flow_chart
+    render_shift_intensity_heatmap, render_patient_flow_chart,
+    render_bed_occupancy_donut
 )
 from ui.components.timeline import render_timeline
 from datetime import datetime
@@ -100,60 +101,69 @@ def render_prof_dashboard():
     metrics = get_dashboard_metrics()
     render_kpi_row(metrics)
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # 🔄 4. Live Flow Summary (Real Data)
-    render_patient_flow_summary(get_patient_flow_stats())
-    
     st.markdown("<div style='margin-top:15px;'></div>", unsafe_allow_html=True)
 
-    # 📐 5. Main Layout (Left: Queue, Right: Analysis)
-    col_left, col_right = st.columns([1.5, 1])
+    # 📈 4. PRIMARY CHARTS (Middle Row)
+    analytics = get_analytics_data()
+    df_beds = get_bed_status_heatmap()
+    
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.markdown("<div class='premium-card' style='padding:15px;'>", unsafe_allow_html=True)
+        render_patient_flow_chart(analytics['daily'])
+        st.markdown("</div>", unsafe_allow_html=True)
+    with c2:
+        st.markdown("<div class='premium-card' style='padding:15px;'>", unsafe_allow_html=True)
+        render_triage_distribution_chart(analytics['triage'])
+        st.markdown("</div>", unsafe_allow_html=True)
+    with c3:
+        st.markdown("<div class='premium-card' style='padding:15px;'>", unsafe_allow_html=True)
+        render_bed_occupancy_donut(df_beds)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("<div style='margin-top:15px;'></div>", unsafe_allow_html=True)
+
+    # 🔍 5. SECONDARY ANALYTICS (Heatmap & Trends)
+    ca1, ca2 = st.columns([1.5, 1])
+    with ca1:
+        st.markdown("<div class='premium-card' style='padding:15px;'>", unsafe_allow_html=True)
+        render_shift_intensity_heatmap(get_shift_heatmap_data())
+        st.markdown("</div>", unsafe_allow_html=True)
+    with ca2:
+        st.markdown("<div class='premium-card' style='padding:15px;'>", unsafe_allow_html=True)
+        render_wait_time_chart(get_wait_time_trends())
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("<div style='margin-top:15px;'></div>", unsafe_allow_html=True)
+
+    # 📑 6. OPERATIONAL DETAILS (Bottom Tables)
+    col_left, col_right = st.columns([1, 1.2])
     
     with col_left:
-        # 🚨 HIGH PRIORITY: Critical Intervention Panel
+        # 🚨 Critical Patients (Limited)
         critical_queue = get_live_queue()
         if not critical_queue.empty and 'OncelikDurumu' in critical_queue.columns:
-            critical_queue = critical_queue[critical_queue['OncelikDurumu'] == 'Kırmızı']
+            critical_queue = critical_queue[critical_queue['OncelikDurumu'] == 'Kırmızı'].head(3)
             if not critical_queue.empty:
-                st.markdown("<div class='premium-card' style='padding:15px; border: 2px solid #ef4444; background: #fff1f2;'>", unsafe_allow_html=True)
-                st.markdown("<span style='font-size:0.9rem; font-weight:800; color:#ef4444;'>🚨 ACİL MÜDAHALE BEKLEYEN KRİTİK VAKALAR</span>", unsafe_allow_html=True)
-                st.dataframe(critical_queue[['Hasta', 'Yas', 'Sikayet', 'Bekleme Süresi']], use_container_width=True, hide_index=True)
+                st.markdown("<div class='premium-card' style='padding:10px; border-left: 5px solid #ef4444;'>", unsafe_allow_html=True)
+                st.markdown("<span style='font-size:0.75rem; font-weight:800; color:#ef4444;'>🚨 KRİTİK VAKALAR</span>", unsafe_allow_html=True)
+                st.dataframe(critical_queue[['Hasta', 'Sikayet', 'Bekleme Süresi']], use_container_width=True, hide_index=True)
                 st.markdown("</div>", unsafe_allow_html=True)
-                st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
-
-        st.markdown("<div class='premium-card' style='padding:15px;'>", unsafe_allow_html=True)
-        render_advanced_table(get_live_queue(), "Aktif Vaka Kuyruğu", "Anasayfa_Kuyruk", hide_columns=['BasvuruID', 'AtamaID', 'PersonelID', 'Durum', 'GelisSekli', 'GelisZamani', 'WaitTimeMinutes'])
-        st.markdown("</div>", unsafe_allow_html=True)
         
-        st.markdown("<div class='premium-card' style='padding:15px;'>", unsafe_allow_html=True)
-        st.markdown("<div style='display:flex; justify-content:space-between; align-items:center;'><span style='font-size:0.8rem; font-weight:700; color:#475569;'>🛏️ YATAK PANOSU</span><span style='font-size:0.6rem; color:#64748b;'>CANLI</span></div>", unsafe_allow_html=True)
-        df_beds = get_bed_status_heatmap()
+        st.markdown("<div class='premium-card' style='padding:10px;'>", unsafe_allow_html=True)
+        st.markdown("<span style='font-size:0.75rem; font-weight:700; color:#475569;'>🛏️ YATAK DURUMU</span>", unsafe_allow_html=True)
         render_compact_bed_grid(df_beds, interactive=False)
         st.markdown("</div>", unsafe_allow_html=True)
 
     with col_right:
-        st.markdown("<div class='premium-card' style='padding:15px;'>", unsafe_allow_html=True)
-        st.markdown("<span style='font-size:0.8rem; font-weight:700; color:#475569;'>📊 ANALİTİK GÖRÜNÜM</span>", unsafe_allow_html=True)
-        
-        analytics = get_analytics_data()
-        
-        with st.expander("📈 Günlük Akış Detayları", expanded=False):
-            render_patient_flow_chart(analytics['daily'])
-            render_advanced_table(analytics['daily'], "Hasta Akışı Verisi", "Analytics_Daily")
-            
-        with st.expander("📊 Triyaj Dağılım Tablosu", expanded=False):
-            render_triage_distribution_chart(analytics['triage'])
-            render_advanced_table(analytics['triage'], "Triyaj İstatistikleri", "Analytics_Triage")
-            
-        with st.expander("🕒 Yoğunluk & Bekleme Analizi", expanded=False):
-            render_shift_intensity_heatmap(get_shift_heatmap_data())
-            render_wait_time_chart(get_wait_time_trends())
-            
-        with st.expander("📜 Sistem Denetim Logları", expanded=True):
-            render_system_log(get_audit_logs())
-            render_advanced_table(get_audit_logs(), "Denetim Kayıtları", "Analytics_Audit")
+        st.markdown("<div class='premium-card' style='padding:10px;'>", unsafe_allow_html=True)
+        live_q = get_live_queue().head(10) # Limit to 10 rows for "less text"
+        render_advanced_table(live_q, "Aktif Hasta Listesi", "Anasayfa_Kuyruk", 
+                            hide_columns=['BasvuruID', 'AtamaID', 'PersonelID', 'Durum', 'GelisSekli', 'GelisZamani', 'WaitTimeMinutes'])
         st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
+    with st.expander("📜 Sistem Denetim Logları (Son İşlemler)", expanded=False):
+        render_system_log(get_audit_logs())
         
 def render_patient_registration():
     st.markdown("<div style='font-size:1.1rem; font-weight:700; color:#1D2D50; margin-bottom:10px;'>📝 HASTA KAYIT VE TRİYAJ MERKEZİ</div>", unsafe_allow_html=True)
@@ -311,8 +321,8 @@ def render_operasyon_merkezi():
     st.markdown("<div class='premium-card' style='padding:15px; background:#f8fafc; border-left:4px solid #3b82f6; margin-bottom:20px;'>", unsafe_allow_html=True)
     st.markdown("<span style='font-size:0.8rem; font-weight:700; color:#475569;'>📢 HASTA ÇAĞIRMA PANELİ</span>", unsafe_allow_html=True)
     if st.button("🔔 SIRADAKİ HASTAYI ÇAĞIR", type="primary", use_container_width=True):
-        if not df.empty:
-            next_p = df.iloc[0]
+        if not patients_df.empty:
+            next_p = patients_df.iloc[0]
             st.success(f"Sıradaki Hasta Çağırıldı: **{next_p['Hasta']}**")
             st.balloons()
         else:
@@ -483,36 +493,32 @@ def render_prof_discharge():
         # 1. TOP SECTION: ACTIVE PATIENT SELECTION
         st.markdown("<div class='premium-card' style='padding:20px; border-top:3px solid #6366f1;'>", unsafe_allow_html=True)
         st.markdown("<span style='font-size:0.8rem; font-weight:700; color:#475569;'>📤 TABURCU EDİLECEK HASTA SEÇİMİ</span>", unsafe_allow_html=True)
-    
-    from data.read_repository import get_professional_queue
-    all_q = get_professional_queue()
-    active_patients = all_q[all_q['Durum'] == 'Aktif Hasta'] if not all_q.empty else pd.DataFrame()
-    
-    if active_patients.empty:
-        st.info("Şu an sistemde taburcu edilecek 'Aktif Hasta' bulunmamaktadır.")
-    else:
-        active_patients['Display'] = active_patients['KayitID'].astype(str) + " - " + active_patients['Hasta']
-        selected_idx = st.selectbox("Tedavisi Tamamlanan Hastayı Seçin", active_patients.index, format_func=lambda x: active_patients.loc[x, 'Display'])
         
-        c1, c2 = st.columns(2)
-        discharge_type = c1.selectbox("Çıkış Türü", ["Taburcu", "Vefat", "Sevk", "Kendi İsteğiyle"])
-        note = c2.text_input("Çıkış Notu (Opsiyonel)")
+        from data.read_repository import get_professional_queue
+        all_q = get_professional_queue()
+        active_patients = all_q[all_q['Durum'] == 'Aktif Hasta'] if not all_q.empty else pd.DataFrame()
         
-        if st.button("🚪 ÇIKIŞI ONAYLA VE KAYDET", type="primary", use_container_width=True):
-            b_id = int(active_patients.loc[selected_idx, 'KayitID'])
+        if active_patients.empty:
+            st.info("Şu an sistemde taburcu edilecek 'Aktif Hasta' bulunmamaktadır.")
+        else:
+            active_patients['Display'] = active_patients['KayitID'].astype(str) + " - " + active_patients['Hasta']
+            selected_idx = st.selectbox("Tedavisi Tamamlanan Hastayı Seçin", active_patients.index, format_func=lambda x: active_patients.loc[x, 'Display'])
             
-            # Update BASVURU state
-            from core.stitch import db
-            db.execute("UPDATE dbo.BASVURU SET Durum = 'Taburcu', CikisTarihi = GETDATE() WHERE BasvuruID = ?", (b_id,))
+            c1, c2 = st.columns(2)
+            discharge_type = c1.selectbox("Çıkış Türü", ["Taburcu", "Vefat", "Sevk", "Servis Yatış", "Ayaktan Çıkış"])
+            note = c2.text_input("Çıkış Notu (Opsiyonel)")
             
-            # Record in CIKIS table
-            from data.write_repository import create_patient_discharge
-            create_patient_discharge(b_id, discharge_type, note, user_id=st.session_state.user_id)
-            
-            st.balloons()
-            UIStabilizer.notify_success(f"Hasta {active_patients.loc[selected_idx, 'Hasta']} başarıyla taburcu edildi.")
-            UIStabilizer.safe_rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
+            if st.button("🚪 ÇIKIŞI ONAYLA VE KAYDET", type="primary", use_container_width=True):
+                b_id = int(active_patients.loc[selected_idx, 'KayitID'])
+                
+                # Record discharge and update state (Atomically via Repository)
+                from data.write_repository import create_patient_discharge
+                create_patient_discharge(b_id, discharge_type, note, user_id=st.session_state.user_id)
+                
+                st.balloons()
+                UIStabilizer.notify_success(f"Hasta {active_patients.loc[selected_idx, 'Hasta']} başarıyla taburcu edildi.")
+                UIStabilizer.safe_rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
     with col_stats:
         st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
@@ -536,14 +542,14 @@ def render_prof_queue():
     st.markdown("<div class='premium-card' style='padding:15px;'>", unsafe_allow_html=True)
     
     from data.read_repository import get_professional_queue
-    df = get_professional_queue()
+    patients_df = get_professional_queue()
     
-    if df.empty:
+    if patients_df.empty:
         st.info("Kuyrukta bekleyen aktif hasta bulunmamaktadır.")
     else:
         # Standard table without row styling (colorless)
-        st.dataframe(df, use_container_width=True, hide_index=True)
-        st.caption(f"ℹ️ Toplam {len(df)} vaka sistemde aktif olarak bekliyor.")
+        st.dataframe(patients_df, use_container_width=True, hide_index=True)
+        st.caption(f"ℹ️ Toplam {len(patients_df)} vaka sistemde aktif olarak bekliyor.")
         
         if st.button("🔄 LİSTEYİ YENİLE", key="refresh_prof_queue"):
             UIStabilizer.safe_rerun()

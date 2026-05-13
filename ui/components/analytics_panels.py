@@ -153,3 +153,29 @@ def render_system_log(logs_df):
                 <div style='color:#94a3b8; font-size:0.75rem;'>{time_str}</div>
             </div>
         """, unsafe_allow_html=True)
+
+def render_bed_occupancy_donut(df_beds):
+    """
+    Renders a donut chart for bed occupancy status.
+    """
+    if df_beds.empty:
+        st.caption("🛏️ Yatak verisi bulunamadı.")
+        return
+        
+    counts = df_beds['Durum'].value_counts()
+    
+    fig = go.Figure(data=[go.Pie(
+        labels=counts.index, 
+        values=counts.values, 
+        hole=.6,
+        marker_colors=['#ef4444' if x == 'Dolu' else '#22c55e' for x in counts.index]
+    )])
+    
+    fig.update_layout(
+        title="Yatak Doluluk Oranı",
+        height=200,
+        margin=dict(l=10, r=10, t=30, b=10),
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5, font=dict(size=10))
+    )
+    st.plotly_chart(fig, use_container_width=True)

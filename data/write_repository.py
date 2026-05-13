@@ -123,3 +123,36 @@ def create_staff(ad, soyad, unvan, uzmanlik, vardiya="Gündüz"):
 def archive_staff(personel_id, user_id=None):
     db.execute("UPDATE dbo.PERSONEL SET Durum = 'Offline' WHERE PersonelID = ?", (personel_id,))
     log_audit_event(user_id, "PERSONEL", "ARCHIVE", desc=f"Personel {personel_id} arşivlendi.")
+
+def create_patient_discharge(basvuru_id, cikis_turu, aciklama, user_id=None):
+    """
+    Standardized patient discharge orchestration.
+    Updates BASVURU, CIKIS, ATAMA, and releases BEDS.
+    """
+    hasta_id = db.fetch_scalar("SELECT HastaID FROM dbo.BASVURU WHERE BasvuruID = ?", (basvuru_id,))
+    
+    # Check for active bed admission
+    yatis_df = db.fetch("SELECT YatisID, YatakID FROM dbo.YATIS WHERE HastaID = ? AND CikisZamani IS NULL", (hasta_id,))
+    yatis_id = yatis_df.iloc[0]['YatisID'] if not yatis_df.empty else None
+    yatak_id = yatis_df.iloc[0]['YatakID'] if not yatis_df.empty else None
+    
+    queries = [
+        # 1. Update BASVURU state
+        ("UPDATE dbo.BASVURU SET Durum = 'Taburcu', CikisTarihi = GETDATE() WHERE BasvuruID = ?", (basvuru_id,)),
+        
+        # 2. Record in CIKIS table
+        ("INSERT INTO dbo.CIKIS (BasvuruID, YatisID, CikisZamani, CikisTuru, Aciklama) VALUES (?, ?, GETDATE(), ?, ?)", 
+         (basvuru_id, yatis_id, cikis_turu, aciklama)),
+        
+        # 3. Complete any active assignments
+        ("UPDATE dbo.PERSONEL_HASTA_ATAMA SET Durum = 'Tamamlandı' WHERE BasvuruID = ?", (basvuru_id,))
+    ]
+    
+    # 4. Release bed if occupied
+    if yatis_id:
+        queries.append(("UPDATE dbo.YATIS SET CikisZamani = GETDATE() WHERE YatisID = ?", (yatis_id,)))
+    if yatak_id:
+        queries.append(("UPDATE dbo.YATAKLAR SET Durum = 'Boş' WHERE YatakID = ?", (yatak_id,)))
+        
+    db.execute_transaction(queries)
+    log_audit_event(user_id, "CIKIS", "DISCHARGE", new_val={"basvuru": basvuru_id, "status": "Taburcu"}, desc=f"Hasta {hasta_id} taburcu edildi ({cikis_turu}).", hasta_id=hasta_id)
