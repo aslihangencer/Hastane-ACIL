@@ -262,11 +262,11 @@ def get_patient_timeline(hasta_id):
     except Exception:
         return pd.DataFrame()
 
-def get_audit_logs():
+def get_islem_kayitlari():
     try:
         query = """
         SELECT K.KullaniciAdi AS KULLANICI, A.IslemTipi AS [İŞLEM TÜRÜ], A.IslemZamani AS ZAMAN, A.Aciklama AS DETAY
-        FROM dbo.AUDIT_LOG A
+        FROM dbo.ISLEM_KAYDI A
         LEFT JOIN dbo.KULLANICILAR K ON A.KullaniciID = K.KullaniciID
         ORDER BY A.IslemZamani DESC
         """

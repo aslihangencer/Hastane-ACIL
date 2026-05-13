@@ -1,5 +1,6 @@
 import sys
 import os
+# Proje kök dizinini sisteme ekliyoruz ki importlar düzgün çalışsın
 sys.path.append(os.getcwd())
 
 import streamlit as st
@@ -11,21 +12,23 @@ from ui.pages.patient_portal import render_patient_portal
 from ui.pages.staff_dashboard import render_staff_dashboard
 
 # ==========================================
-# 🧱 CRASH-FREE STARTUP ARCHITECTURE
+# 🧱 SİSTEM BAŞLATMA VE HATA KONTROLÜ
 # ==========================================
+# Uygulama ilk kez çalışırken gerekli ayarları ve veritabanı bağlantısını kontrol ediyoruz
 if 'boot_ready' not in st.session_state:
     with st.spinner("Sistem Hazırlanıyor..."):
         is_ready = Bootloader.run_safe_boot()
         st.session_state['boot_ready'] = is_ready
 
+# Eğer sistem düzgün başlatılamadıysa bakım ekranını gösteriyoruz
 if not st.session_state['boot_ready']:
     Bootloader.render_maintenance_ui()
 
 # ==========================================
-# 🏥 NORMAL APPLICATION FLOW
+# 🏥 ANA UYGULAMA AKIŞI
 # ==========================================
 
-# Page Config
+# Tarayıcı sekmesi ayarları
 st.set_page_config(
     page_title="Hastane Acil Servis", 
     page_icon="🏥", 
@@ -33,21 +36,23 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Inject Professional Styling
+# Görsel tasarım (CSS) enjeksiyonu
 inject_premium_css()
 
-# Init Session
+# Oturum yönetimi başlatma
 AuthService.init_session()
 
-# Defensive State Init
+# Sayfa genelinde kullanılan değişkenlerin (yatak seçimi vb.) ön tanımlaması
 if 'selected_bed' not in st.session_state or st.session_state.selected_bed is None:
     st.session_state.selected_bed = {}
 
-# Assets Paths
+# Tasarımda kullanılan ikon yolları
 DOCTOR_ICON = "C:/Users/Handan Gencer/.gemini/antigravity/brain/a80efca0-1516-4ecd-afb9-6e6a78b3e63c/doctor_icon_3d_1778328405892.png"
 PATIENT_ICON = "C:/Users/Handan Gencer/.gemini/antigravity/brain/a80efca0-1516-4ecd-afb9-6e6a78b3e63c/patient_icon_3d_1778328390452.png"
 
-# --- LOGIN VIEWS ---
+# --- GİRİŞ EKRANLARI ---
+
+# Kullanıcının Hasta mı yoksa Personel mi olduğunu seçtiği ana ekran
 def render_login_selection():
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.markdown("<h1 style='text-align: center; color: #1e3a5f; font-size: 2.8rem; margin-bottom: 0;'>HASTANE ACİL SERVİS</h1>", unsafe_allow_html=True)
@@ -65,11 +70,11 @@ def render_login_selection():
     with col3:
         st.image(DOCTOR_ICON, width=350)
         st.markdown("<h2 style='color:#1e3a5f; margin-top:10px; text-align:center;'>Personel Girişi</h2>", unsafe_allow_html=True)
-        # Consistent Button Text: "Sisteme Giriş Yap"
         if st.button("Sisteme Giriş Yap", key="btn-personel", use_container_width=True, type="primary"):
             st.session_state.login_view = 'personel'
             st.rerun()
 
+# Hastaların TC No ve ID ile giriş yaptığı ekran
 def render_hasta_login():
     col1, col2, col3 = st.columns([1,2,1])
     with col2:
@@ -95,6 +100,7 @@ def render_hasta_login():
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
+# Hastane personelinin giriş yaptığı ekran
 def render_personel_login():
     col1, col2, col3 = st.columns([1,2,1])
     with col2:
@@ -106,7 +112,6 @@ def render_personel_login():
             if st.form_submit_button("Sisteme Giriş", type="primary", use_container_width=True):
                 if AuthService.login_personel(k_adi, sifre): st.rerun()
         
-        # Parallel Guidance Box for Staff (Pastel Blue)
         st.markdown("""
             <div style='background: #f0f9ff; padding: 20px; border-radius: 12px; border: 2px solid #bae6fd; margin-top: 25px;'>
                 <p style='color: #0369a1; font-size: 0.9rem; margin: 0; line-height: 1.5;'>
@@ -121,13 +126,16 @@ def render_personel_login():
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
+# Ana yönlendirme fonksiyonu (Authentication durumuna göre ekran seçer)
 def main():
     if not AuthService.is_authenticated():
+        # Giriş yapılmadıysa login ekranlarını göster
         view = st.session_state.get('login_view')
         if view == 'hasta': render_hasta_login()
         elif view == 'personel': render_personel_login()
         else: render_login_selection()
     else:
+        # Giriş yapıldıysa yetkiye göre portalı aç
         if st.session_state.auth_type == 'hasta':
             render_patient_portal()
         else:

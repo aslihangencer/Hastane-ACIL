@@ -1,25 +1,19 @@
-# Python
+# Python artıkları
 __pycache__/
 *.py[cod]
 *$py.class
-.env
-.venv
-env/
-venv/
-build/
-dist/
 
-# IDEs
+# Sanal ortam
+venv/
+env/
+
+# Editör artıkları
 .vscode/
+.vs/
 .idea/
 
-# App Specific
-.gemini/
-logs/
+# Veritabanı ve Yerel Ayarlar
+.env
 *.log
-temp/
-scratch/
-artifacts/
-*.webp
-*.png
-*.jpg
+*.mdf
+*.ldf

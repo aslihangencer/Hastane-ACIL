@@ -6,7 +6,7 @@ import numpy as np
 def log_audit_event(user_id, table_name, action, old_val=None, new_val=None, desc="", hasta_id=None):
     """Enhanced audit logging with patient context."""
     query = """
-    INSERT INTO dbo.AUDIT_LOG (KullaniciID, TabloAdi, IslemTipi, EskiDeger, YeniDeger, Aciklama, HastaID)
+    INSERT INTO dbo.ISLEM_KAYDI (KullaniciID, TabloAdi, IslemTipi, EskiDeger, YeniDeger, Aciklama, HastaID)
     VALUES (?, ?, ?, ?, ?, ?, ?)
     """
     db.execute(query, (user_id, table_name, action, 

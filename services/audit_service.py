@@ -21,11 +21,11 @@ class AuditService:
         print(f"[AUDIT] {user} performed {event_name}: {scrubbed_data}")
         
         # 2. Event Bus for UI
-        event_bus.emit("AUDIT_LOG", {"user": user, "event": event_name, "data": scrubbed_data})
+        event_bus.emit("ISLEM_KAYDI", {"user": user, "event": event_name, "data": scrubbed_data})
         
-        # 3. Optional: Write to dbo.AUDIT_LOG if table exists
+        # 3. Optional: Write to dbo.ISLEM_KAYDI if table exists
         # try:
-        #     db.execute("INSERT INTO dbo.AUDIT_LOG (Kullanici, Islem, Hedef, Tarih) VALUES (?, ?, ?, GETDATE())", 
+        #     db.execute("INSERT INTO dbo.ISLEM_KAYDI (Kullanici, Islem, Hedef, Tarih) VALUES (?, ?, ?, GETDATE())", 
         #                (user, event_name, scrubbed_data[:255]))
         # except: pass
 

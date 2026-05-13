@@ -55,7 +55,7 @@ class HospitalStitch:
         conn = None
         for attempt in range(self.max_retries):
             try:
-                conn = pyodbc.connect(self.conn_str, timeout=5)
+                conn = pyodbc.connect(self.conn_str, timeout=30)
                 break
             except pyodbc.Error as e:
                 logger.warning(f"Connection attempt {attempt+1} failed: {e}")

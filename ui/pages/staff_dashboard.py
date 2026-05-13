@@ -7,7 +7,7 @@ from data.read_repository import (
     get_dashboard_metrics, get_live_queue, get_bed_status_heatmap, 
     get_all_staff, get_system_health, get_analytics_data,
     get_discharge_history, get_triage_options, get_arrival_types,
-    get_discharge_types, get_audit_logs, get_staff_by_role,
+    get_discharge_types, get_islem_kayitlari, get_staff_by_role,
     get_all_patients_lookup, get_all_active_cases,
     get_wait_time_trends, get_system_alerts, get_patient_flow_stats,
     get_shift_heatmap_data, get_hasta_id_by_tc, get_hasta_id_by_name,
@@ -163,7 +163,7 @@ def render_prof_dashboard():
         st.markdown("</div>", unsafe_allow_html=True)
     st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
     with st.expander("📜 Sistem Denetim Logları (Son İşlemler)", expanded=False):
-        render_system_log(get_audit_logs())
+        render_system_log(get_islem_kayitlari())
         
 def render_patient_registration():
     st.markdown("<div style='font-size:1.1rem; font-weight:700; color:#1D2D50; margin-bottom:10px;'>📝 HASTA KAYIT VE TRİYAJ MERKEZİ</div>", unsafe_allow_html=True)
@@ -425,14 +425,11 @@ def render_prof_beds():
                 color = "#ef4444" if is_dolu else "#10b981"
                 bg_color = "#fee2e2" if is_dolu else "#ecfdf5"
                 status_text = "DOLU" if is_dolu else "BOŞ"
-                patient_info = f"<div style='font-size:0.8rem; color:#475569; margin-top:5px;'>👤 {row['Hasta']}</div>" if row['Hasta'] else ""
-                
                 st.markdown(f"""
-                    <div style='border:2px solid {color}; border-radius:12px; padding:12px; background:{bg_color}; margin-bottom:10px; min-height:120px; box-shadow:0 2px 4px rgba(0,0,0,0.05);'>
+                    <div style='border:2px solid {color}; border-radius:12px; padding:12px; background:{bg_color}; margin-bottom:10px; min-height:110px; box-shadow:0 2px 4px rgba(0,0,0,0.05);'>
                         <div style='font-size:0.7rem; font-weight:700; color:#64748b;'>ODA {row['OdaNo']}</div>
                         <div style='font-size:1.1rem; font-weight:800; color:#1e293b;'>Yatak {row['YatakNo']}</div>
                         <div style='font-weight:700; color:{color}; font-size:0.85rem; margin:5px 0;'>{status_text}</div>
-                        {patient_info}
                     </div>
                 """, unsafe_allow_html=True)
                 
@@ -597,7 +594,7 @@ def render_advanced_system():
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("#### 🛡️ GÜVENLİK VE İŞLEM GÜNLÜĞÜ")
     st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
-    st.dataframe(get_audit_logs(), use_container_width=True, hide_index=True)
+    st.dataframe(get_islem_kayitlari(), use_container_width=True, hide_index=True)
     st.markdown("</div>", unsafe_allow_html=True)
     
     st.markdown("---")
