@@ -5,19 +5,24 @@
 ![SQL Server](https://img.shields.io/badge/SQL_Server-Enterprise-CC2927?style=for-the-badge&logo=microsoft-sql-server)
 
 A production-ready, medical-grade Emergency Department (ED) ERP system built with a modular CQRS-inspired architecture. This system provides a professional user interface based on Meditech/Epic aesthetics, rule-based triage scoring, and real-time bed management.
-Home Page
+
+
+## Home Page
 <img width="1295" height="624" alt="image" src="https://github.com/user-attachments/assets/22865015-da3b-44e2-8c4e-122bf0208703" />
 
-Patient Admission Panel
-<img width="975" height="636" alt="image" src="https://github.com/user-attachments/assets/078f3a67-4204-4612-9733-79d18734caf0" />
-Staff Homepage
+## Patient Admission Panel
+<img width="975" height="636" alt="image" src="https://github.com/user-attachments/assets/078f3a67-4204-4612-9733-79d18734caf0" /> 
+
+## Staff Homepage
 <img width="1805" height="757" alt="image" src="https://github.com/user-attachments/assets/033c9196-0de8-4094-a6ba-42f1222c96a8" />
 
-Patient Registration
+## Patient Registration
 <img width="1784" height="679" alt="image" src="https://github.com/user-attachments/assets/48b1eebd-301a-4169-86ec-b250313047ef" />
-Bed Management
+
+## Bed Management
 <img width="1766" height="635" alt="image" src="https://github.com/user-attachments/assets/043d1c4e-bf4b-4cce-8d72-80d9f245e61c" />
-Personel Management
+
+## Personel Management
 <img width="1820" height="712" alt="image" src="https://github.com/user-attachments/assets/06a15637-37d9-4d0e-8e11-270b5d4b771f" />
 
 
